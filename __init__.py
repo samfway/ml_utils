@@ -9,5 +9,5 @@ __maintainer__ = "Sam Way"
 __email__ = "samfway@gmail.com"
 __status__ = "Development"
 
-__all__ = ['cross_validation', 'parse'] 
+__all__ = ['cross_validation', 'parse', 'plot_confusion_matrix'] 
 
