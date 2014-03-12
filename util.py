@@ -12,6 +12,12 @@ __status__ = "Development"
 """ Machine Learning utility script 
 """
 
+def convert_labels_to_int(labels):
+    """ Convert a list of labels to indices """ 
+    unique_labels = list(set(labels))
+    label_indices = [ unique_labels.index(l) for l in labels ] 
+    return unique_labels, label_indices
+
 def bool_cast(s):
     """ Cast string to boolean """
     if s.lower() == 'true' or s.lower() == 't':
