@@ -12,6 +12,7 @@ __status__ = "Development"
 """ Scripts for performing cross validation
 """
 
+from numpy import array
 from sklearn.cross_validation import StratifiedKFold, KFold
 from numpy import array
 
