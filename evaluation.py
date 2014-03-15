@@ -13,6 +13,7 @@ __status__ = "Development"
 """
 
 from cross_validation import get_test_train_set
+from numpy import array
 from time import clock 
 
 def get_evaluation_report(models, data_matrix, labels, test_sets, metrics):
@@ -65,12 +66,17 @@ def print_evaluation_report(evaluation_report, output_file):
     """ Write an evaluation report out to a text file """ 
     model_names = evaluation_report.keys()
     metrics = evaluation_report[model_names[-1]].keys()
+    longest_metric = max([len(metric) for metric in metrics])
 
     output = open(output_file, 'w')
-    output.write('Models:\t' + '\t'.join(model_names))
+    pad = longest_metric - len('Models')
+    output.write('Models%s :\t' % (' '*pad))
+    output.write('\t'.join(model_names))
 
     for metric in metrics:
-        output.write('\n%s:' % (metric))
+        pad = longest_metric - len(metric)
+        output.write('\n%s%s :' % (metric, ' '*pad))
+        
         for model_name in model_names:
             temp = array(evaluation_report[model_name][metric])
             output.write('\t%.2f (+-%.2f)' % (temp.mean(), temp.std()))
