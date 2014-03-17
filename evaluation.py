@@ -81,6 +81,7 @@ def print_evaluation_report(evaluation_report, output_file):
             temp = array(evaluation_report[model_name][metric])
             output.write('\t%.2f (+-%.2f)' % (temp.mean(), temp.std()))
 
+    output.write('\n\n')
     output.close()     
 
 def make_evaluation_report(models, data_matrix, labels, test_sets, metrics, output_file):
