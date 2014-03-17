@@ -20,16 +20,16 @@ from util import custom_cast
 import pickle
 import warnings
 
-def save_predictions_to_file(predictions, filename):
-    """ Save classification results to a pickle file """
-    pickle.dump(predictions, open(filename, 'wb'))
+def save_object_to_file(obj, filename):
+    """ Save object to a pickle file """
+    pickle.dump(obj, open(filename, 'wb'))
 
-def load_predictions_from_file(filename):
-    """ Load classification/regression results from pickle file """
+def load_object_from_file(filename):
+    """ Load object from pickle file """
     return pickle.load(open(filename, 'rb'))
 
 def load_dataset(data_matrix_file, mapping_file, metadata_category, \
-    metadata_value, labels_file, is_distance_matrix):
+    metadata_value, labels_file, is_distance_matrix=False):
     """ Parse and prepare data for processing. """
 
     if not is_distance_matrix:
