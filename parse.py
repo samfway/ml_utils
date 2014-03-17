@@ -30,7 +30,7 @@ def load_object_from_file(filename):
 
 def parse_predictions_file(filename):
     """ Load predictions from a file, one per line """ 
-    retrun [ custom_cast(line.strip()) for line in open(filename, 'rU') ] 
+    return [ custom_cast(line.strip()) for line in open(filename, 'rU') ] 
 
 def load_dataset(data_matrix_file, mapping_file, metadata_category, \
     metadata_value, labels_file, is_distance_matrix=False):
