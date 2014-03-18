@@ -16,8 +16,32 @@ from cross_validation import get_test_train_set
 from numpy import array
 from time import clock 
 
+def format_model_predictions(model_predictions, metrics):
+    """ Takes in a list of tuples (model_name, predictions, true_values) and returns an 
+        evaluation report.  Model results are grouped by model name, so entries can be
+        supplied for a model, if desired. 
+
+        Example usage: 
+        model_predictions = [ ('svm', [1, 1, 1], [1, 1, 0]), ('rf', [1, 1, 1], [1, 1, 1]) ] 
+        metrics = [('Accuracy', metrics.accuracy_score)]
+        evaluation_report = format_model_predictions(model_predictions, metrics)
+        print_evaluation_report(evaluation_report, 'report.txt')
+
+    """ 
+    evaluation_report = {}
+    for model_name, predictions, true_values in model_predictions:
+        evaluation_report[model_name] = { metric_name:[] for metric_name, metric in metrics}
+
+    for model_name, predictions, true_values in model_predictions:
+        for metric_name, metric in metrics:
+            evaluation_report[model_name][metric_name].append(metric(true_values, predictions))
+
+    return evaluation_report 
+
 def get_evaluation_report(models, data_matrix, labels, test_sets, metrics):
     """ Get prediction results for a given list of models, using the supplied test sets 
+        Includes timing information and whatever evaluation metrics you supply. 
+
         Inputs:
             models       : list of tuples, each tuple containing a name and model 
                            (must implement .predict() and .fit())
@@ -79,7 +103,7 @@ def print_evaluation_report(evaluation_report, output_file):
         
         for model_name in model_names:
             temp = array(evaluation_report[model_name][metric])
-            output.write('\t%.2f (+-%.2f)' % (temp.mean(), temp.std()))
+            output.write('\t%.3f (+-%.2f)' % (temp.mean(), temp.std()))
 
     output.write('\n\n')
     output.close()     
