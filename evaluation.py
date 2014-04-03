@@ -2,9 +2,9 @@
 
 __author__ = "Sam Way"
 __copyright__ = "Copyright 2011, The QIIME Project"
-__credits__ = ["Sam Way", "Dan Malmer", "Will Van Treuren", "Rob Knight"]
-__license__ = "GPL"
-__version__ = "1.7.0-dev"
+__credits__ = ["Sam Way"]
+__license__ = "BSD"
+__version__ = "unversioned"
 __maintainer__ = "Sam Way"
 __email__ = "samfway@gmail.com"
 __status__ = "Development"
@@ -13,9 +13,176 @@ __status__ = "Development"
 """
 
 from cross_validation import get_test_train_set
+from util import is_iterable
 from numpy import array
 from time import clock 
 
+
+def get_predictions(models, data_matrix, labels, test_sets):
+    """ Get model predictions for the supplied test set as
+        well as timing information for training and running
+        each of the models. 
+
+        INPUTS
+        models - list of tuples where each tuple looks like
+                 (model_name, model)
+                 model should implement both fit() and predict()
+                 methods in order to be tested here. 
+
+        data_matrix - matrix containing feature values for
+                      all samples.  Any necessary data
+                      preprocessing should be performed 
+                      prior to this step or included in the 
+                      models.  
+        labels - true labels/values that we wish to predict
+
+        test_sets - list of tuples where each tuple looks like
+                    (training indices, testing indices)
+                    These lists of indicies will be used to 
+                    slice out appropriate portions of the 
+                    data matrix and labels.  
+
+        OUTPUTS
+        timing_info - dictionary indexed by model names
+                      contains list of tuples where each tuple
+                      is (train time, run time) for each 
+                      of the test sets in test_sets. 
+
+        model_predictions - dictionary indexed by model names
+                            contains list of model predictions
+                            for each of the test sets
+
+        actual_values - list of actual labels/values corresponding 
+                        to each of the test sets.
+    """
+    timing_info = {}
+    model_predictions = {}
+    actual_values = []
+
+    for model_name, model in models:
+        timing_info[model_name] = []
+        model_predictions[model_name] = []
+        
+    for test_set in test_sets:
+
+        training_matrix, training_labels, test_matrix, test_labels = \
+            get_test_train_set(data_matrix, labels, test_set)
+        actual_values.append(test_labels)
+
+        for model_name, model in models:
+
+            # Training 
+            start_time = clock() 
+            model.fit(training_matrix, training_labels)
+            training_time = clock() - start_time
+
+            # Testing 
+            start_time = clock()
+            predictions = model.predict(test_matrix)
+            running_time = clock() - start_time
+
+            model_predictions[model_name].append(predictions)
+            timing_info[model_name].append((training_time, running_time))
+
+    return timing_info, model_predictions, actual_values
+
+
+def unpack_evaluations(model_predictions, actual_values):
+    """ In the event that multiple outputs were predicted
+        unpack them into separate results for easier
+        shipping and handling """ 
+    first_model = model_predictions.iterkeys().next()
+    first_predictions = model_predictions[first_model][0]
+    num_outputs = first_predictions.ndim
+
+    if num_outputs == 1:
+        return [(model_predictions, actual_values)]
+    else:
+        separate_model_predictions = []
+        separate_actual_values = []
+
+        for i in xrange(num_outputs):
+            a_copy = [a[:,i] for a in actual_values]
+            p_copy = model_predictions.copy()
+            for model_name, predictions in p_copy.iteritems():
+                p_copy[model_name] = \
+                    [ p[:,i] for p in predictions ]
+            separate_model_predictions.append(p_copy)
+            separate_actual_values.append(a_copy)
+
+        return zip(separate_model_predictions,
+                   separate_actual_values)
+
+
+def evaluate_models(models, data_matrix, labels, test_sets, 
+                    metrics, output_handle):
+    """ Get model predictions for the supplied test set as
+        well as timing information for training and running
+        each of the models. 
+
+        INPUTS
+        models - list of tuples where each tuple looks like
+                 (model_name, model)
+                 model should implement both fit() and predict()
+                 methods in order to be tested here. 
+
+        data_matrix - matrix containing feature values for
+                      all samples.  Any necessary data
+                      preprocessing should be performed 
+                      prior to this step or included in the 
+                      models.  
+        labels - true labels/values that we wish to predict
+
+        test_sets - list of tuples where each tuple looks like
+                    (training indices, testing indices)
+                    These lists of indicies will be used to 
+                    slice out appropriate portions of the 
+                    data matrix and labels.  
+
+        metrics - list of tuples where each tuple contains
+                  (metric_name, metric)
+    """   
+    model_names = [model_name for model_name, m in models]
+    metric_names = [metric_name for metric_name, m in metrics]
+    timing_info, model_predictions, actual_values = \
+        get_predictions(models, data_matrix, labels, test_sets)
+    unpacked = unpack_evaluations(model_predictions, actual_values)
+    output_number = 1
+    longest_name = max([len(m) for m in model_names])
+
+    for model_predictions, actual_values in unpacked: 
+        if len(unpacked) > 1:
+            output_handle.write('Output: %d\n' % (output_number))
+            output_number += 1
+       
+        output_handle.write(' '*(longest_name)
+                            + '\tTraining (s)'
+                            + '\tRunning (s)\t'
+                            + '\t'.join(metric_names) 
+                            + '\n')
+
+        for model_name, model in models:
+            pad = ' '*(longest_name-len(model_name))
+            output_handle.write(pad + model_name + ': ')
+            train_time = [t[0] for t in timing_info[model_name]]
+            train_time = array(train_time).mean()
+            run_time = [t[1] for t in timing_info[model_name]]
+            run_time = array(run_time).mean()
+            output_handle.write('\t%0.3f\t\t%0.3f\t' 
+                % (train_time, run_time))
+
+            for metric_name, metric in metrics:
+                temp_values = []
+                for true, pred in zip(actual_values,
+                                      model_predictions[model_name]):
+                    temp_values.append(metric(true, pred))
+                temp_values = array(temp_values)
+                output_handle.write('\t%0.3f' % (temp_values.mean()))
+            output_handle.write('\n')
+        output_handle.write('\n')
+
+'''
+#Old code... What to do, what to do... 
 def get_evaluation_report(models, data_matrix, labels, test_sets, metrics):
     """ Get prediction results for a given list of models, using the supplied test sets 
         Inputs:
@@ -88,4 +255,4 @@ def make_evaluation_report(models, data_matrix, labels, test_sets, metrics, outp
     """ Run and print evaluation report """ 
     evaluation_report = get_evaluation_report(models, data_matrix, labels, test_sets, metrics)
     print_evaluation_report(evaluation_report, output_file)
-
+'''

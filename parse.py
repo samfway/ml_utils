@@ -16,7 +16,7 @@ from numpy import asarray, array, zeros
 from biom.parse import parse_biom_table
 from biom.table import DenseTable
 from qiime.parse import parse_mapping_file_to_dict, parse_distmat
-from util import custom_cast
+from util import custom_cast, convert_labels_to_int
 import pickle
 import warnings
 
@@ -54,7 +54,9 @@ def load_dataset(data_matrix_file, mapping_file, metadata_category, \
         data_matrix, sample_ids, actual_values = sync_labels_and_otu_matrix(data_matrix, \
             sample_ids, label_dict)
 
-    return data_matrix, sample_ids, actual_values
+    label_legend, labels = convert_labels_to_int(actual_values)
+
+    return data_matrix, sample_ids, labels, label_legend 
 
 def parse_otu_matrix(biom_file):
     """ Parses a (dense) OTU matrix from a biom file. 
@@ -118,7 +120,11 @@ def parse_labels_file_to_dict(labels_file):
     for line in open(labels_file, 'rU'):
         pieces = line.strip().split('\t')
         if len(pieces) != 2: continue 
-        label_dict[pieces[0]] = custom_cast(pieces[1])
+        label_pieces = pieces[1].split(',')
+        if len(label_pieces) > 1:
+            label_dict[pieces[0]] = [custom_cast(p) for p in label_pieces]
+        else:
+            label_dict[pieces[0]] = custom_cast(pieces[1])
     return label_dict
 
 def sync_labels_and_otu_matrix(otu_matrix, sample_ids, labels_dict):
