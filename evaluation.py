@@ -143,17 +143,24 @@ def evaluate_models(models, data_matrix, labels, test_sets,
                   (metric_name, metric)
     """   
     model_names = [model_name for model_name, m in models]
+    longest_name = max([len(m) for m in model_names])
     metric_names = [metric_name for metric_name, m in metrics]
     timing_info, model_predictions, actual_values = \
         get_predictions(models, data_matrix, labels, test_sets)
-    unpacked = unpack_evaluations(model_predictions, actual_values)
     output_number = 1
-    longest_name = max([len(m) for m in model_names])
+
+    unpacked = unpack_evaluations(model_predictions, actual_values)
+    if len(unpacked) > 1:
+        # Also show combined, if multiple outputs
+        unpacked.append((model_predictions.copy(), actual_values[:]))
 
     for model_predictions, actual_values in unpacked: 
         if len(unpacked) > 1:
-            output_handle.write('Output: %d\n' % (output_number))
-            output_number += 1
+            if output_number == len(unpacked):
+                output_handle.write('Combined Outputs\n')
+            else:
+                output_handle.write('Output: %d\n' % (output_number))
+                output_number += 1
        
         output_handle.write(' '*(longest_name)
                             + '\tTraining (s)'
@@ -175,9 +182,13 @@ def evaluate_models(models, data_matrix, labels, test_sets,
                 temp_values = []
                 for true, pred in zip(actual_values,
                                       model_predictions[model_name]):
-                    temp_values.append(metric(true, pred))
+                    # tolist() conversion to avoid weird error
+                    # ValueError: Can't handle mix of multiclass-multioutput and 
+                    #             multilabel-indicator
+                    # Line 115 of sklearn/metrics/metrics.py
+                    temp_values.append(metric(true.tolist(), pred.tolist()))
                 temp_values = array(temp_values)
-                output_handle.write('\t%0.3f' % (temp_values.mean()))
+                output_handle.write('\t%0.4f' % (temp_values.mean()))
             output_handle.write('\n')
         output_handle.write('\n')
 
