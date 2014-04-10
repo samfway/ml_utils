@@ -12,11 +12,11 @@ __status__ = "Development"
 """ Machine Learning utility script 
 """
 
-from numpy import array
+from numpy import array, ndarray
 
 def is_iterable(item):
     """ Check if item is list-like """ 
-    return isinstance(item, (list, tuple)) and \
+    return isinstance(item, (list, tuple, ndarray)) and \
         not isinstance(item, basestring)
 
 def convert_labels_to_int(labels):
@@ -27,7 +27,7 @@ def convert_labels_to_int(labels):
     if isinstance(labels[0], basestring):
         label_legend = list(set(labels))
         converted_labels = [ label_legend.index(l) for l in labels ]
-    else:  # Multiple labels, handle each one individually
+    elif is_iterable(labels[0]):  # Multiple labels, handle each one individually
         num_labels = len(labels[0])
         label_legend = []
         converted_labels = []
@@ -42,6 +42,9 @@ def convert_labels_to_int(labels):
             converted_label = [ leg.index(l) for leg, l in 
                                 zip(label_legend, label) ]
             converted_labels.append(converted_label)
+    else:  # Not a string, not a list, go for ints
+        converted_labels = [int(x) for x in labels] 
+        label_legend = list(set(labels))
 
     return label_legend, array(converted_labels)
 

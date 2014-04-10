@@ -210,7 +210,7 @@ def evaluate_models(models, data_matrix, labels, test_sets,
                     # Line 115 of sklearn/metrics/metrics.py
                     temp_values.append(metric(true.tolist(), pred.tolist()))
                 temp_values = array(temp_values)
-                output_handle.write('\t%0.4f' % (temp_values.mean()))
+                output_handle.write('\t%0.4f (+/- %0.4f)' % (temp_values.mean(), temp_values.std()*2))
             output_handle.write('\n')
         output_handle.write('\n')
 

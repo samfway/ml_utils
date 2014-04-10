@@ -49,7 +49,7 @@ def load_dataset(data_matrix_file, mapping_file, metadata_category, \
         actual_values = parse_mapping_file_to_labels(mapping_file, sample_ids, \
             metadata_category, metadata_value)
     else:
-        sample_ids = array([x.split('.')[0] for x in sample_ids]) # Hack to work with Dan's stuff
+        #sample_ids = array([x.split('.')[0] for x in sample_ids]) # Hack to work with Dan's stuff
         label_dict =  parse_labels_file_to_dict(labels_file)
         data_matrix, sample_ids, actual_values = sync_labels_and_otu_matrix(data_matrix, \
             sample_ids, label_dict)
@@ -131,6 +131,8 @@ def sync_labels_and_otu_matrix(otu_matrix, sample_ids, labels_dict):
     """ Returns appropriate rows of an otu matrix and corresponding sample id vector 
         to include all sample ids in labels_dict """ 
     select = array([ i for i in xrange(len(otu_matrix)) if sample_ids[i] in labels_dict.keys()])
+    if not len(select): 
+        raise ValueError("Couldn't find overlapping sample IDs between otu matrix and labels")
     otu_matrix = otu_matrix[select, :]
     sample_ids = sample_ids[select]
     class_labels = array([labels_dict[sid] for sid in sample_ids])
