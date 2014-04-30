@@ -168,5 +168,45 @@ def parse_confusion_matrix_file(input_file, normalized=True):
             else:
                 raise ValueError('Row for "%s" contains all zeros' % (labels[i]))
         confusion_matrix[i] = values 
+    input_fp.close()
     return confusion_matrix, labels 
 
+def parse_cv_results_file(input_file):
+    """ Parses the output of "cv_probabilities.txt," a file generated
+        by supervised_learning.py's R script. 
+
+        Assumes format:
+        #SampleID\t<LABEL_1>\t...\t<LABEL_K>
+        123\t0.01\t0.01\t...\t0.9
+
+        Inputs:
+        input_file - file path to cv_probabilities.txt
+        
+        Returns:    
+        sample_probs - a dictionary storing label probabilities for each sample
+                       (indexed/keyed by sample id)
+        labels - list of labels corresponding to the order of probabilities
+                 in the sample_probs vectors
+    """ 
+    input_fp = open(input_file, 'rU')
+    first_line = input_fp.readline()
+    line_pieces = first_line.strip().split('\t')
+
+    if not line_pieces or line_pieces[0] != '#SampleID':
+        raise ValueError('Input file not in expected format\n' + \
+            'First line should start with "#SampleID"')
+    
+    sample_probs = {}  
+    labels = line_pieces[1:]
+    num_labels = len(labels)
+    
+    for line in input_fp:
+        line_pieces = line.strip().split('\t')
+        if len(line_pieces) != num_labels+1:
+            continue  # skip invalid lines
+        sample_id = line_pieces[0]
+        probs = array([float(x) for x in line_pieces[1:]])
+        sample_probs[sample_id] = probs
+
+    input_fp.close()
+    return sample_probs, labels
