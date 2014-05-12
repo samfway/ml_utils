@@ -33,7 +33,8 @@ def parse_predictions_file(filename):
     return [ custom_cast(line.strip()) for line in open(filename, 'rU') ] 
 
 def load_dataset(data_matrix_file, mapping_file, metadata_category, \
-    metadata_value, labels_file, is_distance_matrix=False):
+    metadata_value, labels_file, is_distance_matrix=False,
+    knights_labels=False):
     """ Parse and prepare data for processing. """
 
     if not is_distance_matrix:
@@ -49,7 +50,8 @@ def load_dataset(data_matrix_file, mapping_file, metadata_category, \
         actual_values = parse_mapping_file_to_labels(mapping_file, sample_ids, \
             metadata_category, metadata_value)
     else:
-        #sample_ids = array([x.split('.')[0] for x in sample_ids]) # Hack to work with Dan's stuff
+        if knights_labels:
+            sample_ids = array([x.split('.')[0] for x in sample_ids]) 
         label_dict =  parse_labels_file_to_dict(labels_file)
         data_matrix, sample_ids, actual_values = sync_labels_and_otu_matrix(data_matrix, \
             sample_ids, label_dict)
